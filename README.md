@@ -1,30 +1,42 @@
-# GraphQL server
+# Simple Neural
 
-> GraphQL server
+| Нейронная сеть прямого распространения (тест)
 
-1. Copy `.env.example` file to `.env`
-2. Copy `./.knex/.env.example` file to `./.knex/.env`
+## Как это говно работает
 
-```bash
-$ cp ./.env.example ./.env
-$ cp ./.knex/.env.example ./.knex/.env
-```
+Все делится на классы, которые в последствии загружаются в граф состоящий из слоёв, синапсов и нейронов.
 
-3. Make a `./.keys` directory and generate keys
-
-```bash
-$ mkdir ./.keys && cd ./.keys
-$ ssh-keygen -t rsa -b 4096 -m PEM -f jwtRS256.key # Don't add passphrase, just press Enter
-$ cd ..
-```
-
-4. Build migrations: `npm run build:migrations`
-5. Apply migrations: `npm run migrate:latest`
-5. Apply seeds: `npm run seed:run`
+Граф может быть сформирован путём парсинга матрицы весов (`new NeuralNetwork().loadNetworkFromMatrix(...)`). Матрица представляет собой многомерный массив слоёв, каждый слой, в свою очередь, содержит массив нейронов. В каждом нейроне матрицы содержится базовый вес нейрона (используется только на входном слое) и массив весов синапсов. Последний (выходной) слой не содержит массив синапсов, так как является завершающим.
 
 
-2. Start the project:
+Пример матрицы:
 
-```bash
-$ npm run start
+```ts
+
+type Bias = number;
+type Weight = number;
+type MatrixNeuron = [Weight, Weight[]];
+type MatrixLayer = [Bias, ActivatorName, MatrixNeuron[]];
+type NeuralWeighMatrix = MatrixLayer[];
+
+
+const matrix: NeuralWeighMatrix = [
+  [
+    0.2, // bias для всех нейронов этого слоя
+    'sigmoid', // активатор нейронов этого слоя
+    [ // массив нейронов
+      [
+        0.1, // базовый вес нейрона
+        [ // массив весов синапсов
+          0.09, // вес синапса в векторе от этого нейрона к нейрону следующего слоя 
+          0.05,  // вес синапса в векторе от этого нейрона к нейрону следующего слоя
+          0.12, // вес синапса в векторе от этого нейрона к нейрону следующего слоя
+        ],
+      ],
+      ...,
+    ],
+  ],
+  ...
+]
+
 ```

@@ -47,6 +47,13 @@ class NeuralNetwork {
         // Fill the Input neurons
         layer.getNeurons().forEach((neuron, neuronIndex) => {
           neuron.activate(values[neuronIndex] * neuron.getWeight());
+
+          // Activate next layer
+          neuron.getSynapses().forEach(synaps => {
+            synaps
+              .getOutputNeuron()
+              .activate(neuron.getActivationsSum(layer.getBias()) * synaps.getWeight());
+          });
         });
       }
 
@@ -54,7 +61,9 @@ class NeuralNetwork {
       if (layer.isHiddenLayer()) {
         layer.getNeurons().forEach(neuron => {
           neuron.getSynapses().forEach(synaps => {
-            synaps.getOutputNeuron().activate(neuron.getActivationsSum() * synaps.getWeight());
+            synaps
+              .getOutputNeuron()
+              .activate(neuron.getActivationsSum(layer.getBias()) * synaps.getWeight());
           });
         });
       }
@@ -62,7 +71,7 @@ class NeuralNetwork {
       // Phase 3. Output layer
       if (layer.isOutputLayer()) {
         layer.getNeurons().forEach(neuron => {
-          result.push(neuron.getActivationsSum());
+          result.push(neuron.getActivationsSum(layer.getBias()));
         });
       }
     });
@@ -96,14 +105,13 @@ class NeuralNetwork {
 
         if (!isLastLayer) {
           [...new Array(nextLayerNeuronsCount).keys()].forEach(() => {
-            weights.push(parseFloat((Math.random() * 1).toFixed(2)));
+            weights.push(Math.random());
           });
         }
 
-        neurons.push([0.1, weights]);
-
-        matrix.push([0.2, 'sigmoid', neurons]);
+        neurons.push([Math.random(), weights]);
       });
+      matrix.push([-Math.random() * 99, 'sigmoid', neurons]);
     });
 
     return matrix;

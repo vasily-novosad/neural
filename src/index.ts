@@ -4,56 +4,82 @@ import NeuralNetwork, { NeuralWeighMatrix } from './services/NeuralNetwork';
 
 const server = http.createServer();
 
-const matrix: NeuralWeighMatrix = [
-  [
-    0.2,
-    'sigmoid',
-    [
-      [0.1, [0.09, 0.05, 0.12]],
-      [0.2, [0.81, 0.4, 0.11]],
-      [0.3, [0.51, 0.22, 0.14]],
-      [0.4, [0.64, 0.1, 0.97]],
-      [0.5, [0.81, 0.89, 0.88]],
-    ],
-  ],
-  [
-    0.2,
-    'sigmoid',
-    [
-      [0.6, [0.1, 0.2, 0.3]],
-      [0.7, [0.01, 0.02, 0.03]],
-      [0.8, [0.001, 0.002, 0.003]],
-    ],
-  ],
-  [
-    0.2,
-    'sigmoid',
-    [
-      [0.9, [0.94, 0.33]],
-      [0.1, [0.01, 0.78]],
-      [0.11, [0.31, 0.23]],
-    ],
-  ],
-  [
-    0.2,
-    'sigmoid',
-    [
-      [0.12, []],
-      [0.13, []],
-    ],
-  ],
-];
-
 const network = new NeuralNetwork();
 
-server.on('request', (req, res) => {
-  console.debug('request');
+const matrix: NeuralWeighMatrix = [
+  [
+    -39,
+    'sigmoid',
+    [
+      [1, [0.3]],
+      [1, [0.1]],
+    ],
+  ],
 
+  [-1, 'sigmoid', [[1, []]]],
+];
+server.on('request', (req, res) => {
   network.loadNetworkFromMatrix(matrix);
 
-  const result = network.calculateNetwork([1, 2, 3, 4, 5]);
-
-  console.debug(result);
+  const data = [
+    {
+      name: 'Иван',
+      weight: 84,
+      height: 180,
+      sex: 1,
+    },
+    {
+      name: 'Тимур',
+      height: 180,
+      weight: 92,
+      sex: 1,
+    },
+    {
+      name: 'Андрей',
+      height: 178,
+      weight: 85,
+      sex: 1,
+    },
+    {
+      name: 'Мария',
+      weight: 57,
+      height: 165,
+      sex: 0,
+    },
+    {
+      name: 'Карина',
+      weight: 48,
+      height: 160,
+      sex: 0,
+    },
+    {
+      name: 'Анна',
+      height: 170,
+      weight: 62,
+      sex: 0,
+    },
+    {
+      name: 'Лиза',
+      height: 166,
+      weight: 49,
+      sex: 0,
+    },
+    {
+      name: 'Себястьян',
+      height: 192,
+      weight: 98,
+      sex: 1,
+    },
+  ];
+  data.forEach(record => {
+    const result = network.calculateNetwork([record.height, record.weight]);
+    const sex = result[0] > 0.5 ? 0 : 1;
+    const right = record.sex === sex;
+    console.debug(
+      right ? 'Right' : '!!! WRONG',
+      `${record.name} is ${right ? '' : 'not '}${sex === 0 ? 'female' : 'male'} (${JSON.stringify(result)})`,
+    );
+  });
 
   res.statusCode = 200;
 

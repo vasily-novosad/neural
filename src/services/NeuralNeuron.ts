@@ -16,10 +16,12 @@ class NeuralNeuron {
     this.#activations.push(value);
   }
 
-  public getActivationsSum() {
+  public getActivationsSum(bias?: number) {
     const sum = this.#activations.reduce((acc, value) => acc + value, 0);
+    const biasValue = typeof bias !== 'undefined' ? bias : 0;
+    const result = this.#activatorFn(sum + biasValue);
 
-    return this.#activatorFn(sum);
+    return result;
   }
 
   public createSynaps(neuron: NeuralNeuron, weight: number, bias: number) {
