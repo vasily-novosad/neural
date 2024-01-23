@@ -64,47 +64,48 @@ class NeuralNetwork {
     return result;
   }
 
-  public generateNetworkMatrix(neuronsPerLayer: number[]) {
-    const matrix: NeuralWeighMatrix = [];
+  // public generateNetworkMatrix(neuronsPerLayer: number[]) {
+  //   const matrix: NeuralWeighMatrix = [];
 
-    neuronsPerLayer.forEach((neuronCountOnLayer, layerIndex) => {
-      const nextLayerNeuronsCount = neuronsPerLayer[layerIndex + 1];
-      const layer: MatrixLayer = [];
+  //   neuronsPerLayer.forEach((neuronCountOnLayer, layerIndex) => {
+  //     const nextLayerNeuronsCount = neuronsPerLayer[layerIndex + 1];
+  //     const layer: MatrixLayer = [];
 
-      [...new Array(neuronCountOnLayer).keys()].forEach(() => {
-        const isLastLayer = typeof nextLayerNeuronsCount === 'undefined';
+  //     [...new Array(neuronCountOnLayer).keys()].forEach(() => {
+  //       const isLastLayer = typeof nextLayerNeuronsCount === 'undefined';
 
-        const weights: number[] = [];
+  //       const weights: number[] = [];
 
-        if (!isLastLayer) {
-          [...new Array(nextLayerNeuronsCount).keys()].forEach(() => {
-            weights.push(parseFloat((Math.random() * 1).toFixed(2)));
-          });
-        }
+  //       if (!isLastLayer) {
+  //         [...new Array(nextLayerNeuronsCount).keys()].forEach(() => {
+  //           weights.push(parseFloat((Math.random() * 1).toFixed(2)));
+  //         });
+  //       }
 
-        layer.push([0.1, 0.2, 'sigmoid', weights]);
-      });
-      matrix.push(layer);
-    });
+  //       layer.push([0.1, 0.2, 'sigmoid', weights]);
+  //     });
+  //     matrix.push(layer);
+  //   });
 
-    return matrix;
-  }
+  //   return matrix;
+  // }
 
   public loadNetworkFromMatrix(neuralMatrix: NeuralWeighMatrix) {
     this.destroy();
 
     neuralMatrix.forEach((matrixLayer, matrixLayerIndex) => {
-      const layer = new NeuralLayer(
+      const [layerBias, matrixSynapses] = matrixLayer;
+      const layerType =
         matrixLayerIndex === 0
           ? 'input-layer'
           : matrixLayerIndex === neuralMatrix.length - 1
             ? 'output-layer'
-            : 'hidden-layer',
-      );
+            : 'hidden-layer';
 
-      matrixLayer.forEach(matrixSynaps => {
-        const [neuronWeight] = matrixSynaps;
-        const neuron = new NeuralNeuron(neuronWeight);
+      const layer = new NeuralLayer(layerType, layerBias);
+      matrixSynapses.forEach(matrixSynaps => {
+        const [neuronbaseWeight] = matrixSynaps;
+        const neuron = new NeuralNeuron(neuronbaseWeight);
 
         layer.addNeuron(neuron);
       });
@@ -120,15 +121,15 @@ class NeuralNetwork {
 
       const nextLayer = this.#layers[layerIndex + 1];
       layer.getNeurons().forEach((neuron, neuronIndex) => {
-        const [_neuronWeight, bias, _activatorName, synapsWeights] =
-          neuralMatrix[layerIndex][neuronIndex];
+        const [layerBias, matrixSynapses] = neuralMatrix[layerIndex];
+        const [_neuronbaseWeight, synapsWeights] = matrixSynapses[neuronIndex];
 
         synapsWeights.forEach((synapsWeight, synapsIndex) => {
           const nextLayerNeuron = nextLayer.getNeurons()[synapsIndex];
           if (!nextLayerNeuron) {
             throw new Error(`Neuron for synaps index ${synapsIndex} does not found`);
           }
-          neuron.createSynaps(nextLayerNeuron, synapsWeight, bias);
+          neuron.createSynaps(nextLayerNeuron, synapsWeight, layerBias);
         });
       });
     });
@@ -145,6 +146,6 @@ export default NeuralNetwork;
 
 type Bias = number;
 type Weight = number;
-type MatrixSynaps = [Weight, Bias, ActivatorName, Weight[]];
-type MatrixLayer = MatrixSynaps[];
+type MatrixNeuron = [Weight, Weight[]];
+type MatrixLayer = [Bias, MatrixNeuron[]];
 export type NeuralWeighMatrix = MatrixLayer[];
