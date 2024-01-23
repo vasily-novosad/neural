@@ -5,14 +5,14 @@
       "name": "Attach to debugger",
       "type": "node",
       "request": "attach",
-      "port": 9223,
+      "port": 9229,
       "sourceMaps": true,
       "restart": true,
       "localRoot": "${workspaceRoot}/src/index.ts",
       "remoteRoot": "${workspaceRoot}/build/index.js",
       "cwd": "${workspaceRoot}",
       "sourceMapPathOverrides": {
-        "webpack://graphql/./src/*": "${workspaceRoot}/src/*"
+        "webpack://neural/./src/*": "${workspaceRoot}/src/*"
       }
     },
     {
@@ -23,7 +23,7 @@
       "internalConsoleOptions": "neverOpen",
       "cwd": "${workspaceRoot}",
       "sourceMapPathOverrides": {
-        "webpack://graphql/./src/*": "${workspaceRoot}/src/*"
+        "webpack://neural/./src/*": "${workspaceRoot}/src/*"
       },
       "args": [
         "test",

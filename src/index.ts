@@ -1,9 +1,43 @@
 import http from 'node:http';
 
+import NeuralNetwork, { NeuralWeighMatrix } from './services/NeuralNetwork';
+
 const server = http.createServer();
+
+const matrix: NeuralWeighMatrix = [
+  [
+    [0.1, 0.2, 'sigmoid', [0.09, 0.05, 0.12]],
+    [0.2, 0.2, 'sigmoid', [0.81, 0.4, 0.11]],
+    [0.3, 0.2, 'sigmoid', [0.51, 0.22, 0.14]],
+    [0.4, 0.2, 'sigmoid', [0.64, 0.1, 0.97]],
+    [0.5, 0.2, 'sigmoid', [0.81, 0.89, 0.88]],
+  ],
+  [
+    [0.6, 0.2, 'sigmoid', [0.1, 0.2, 0.3]],
+    [0.7, 0.2, 'sigmoid', [0.01, 0.02, 0.03]],
+    [0.8, 0.2, 'sigmoid', [0.001, 0.002, 0.003]],
+  ],
+  [
+    [0.9, 0.2, 'sigmoid', [0.94, 0.33]],
+    [0.1, 0.2, 'sigmoid', [0.01, 0.78]],
+    [0.11, 0.2, 'sigmoid', [0.31, 0.23]],
+  ],
+  [
+    [0.12, 0.2, 'sigmoid', []],
+    [0.13, 0.2, 'sigmoid', []],
+  ],
+];
+
+const network = new NeuralNetwork();
 
 server.on('request', (req, res) => {
   console.debug('request');
+
+  network.loadNetworkFromMatrix(matrix);
+
+  const result = network.calculateNetwork([1, 2, 3, 4, 5]);
+
+  console.debug(result);
 
   res.statusCode = 200;
 
