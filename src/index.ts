@@ -4,19 +4,11 @@ import NeuralNetwork, { NeuralWeighMatrix } from './services/NeuralNetwork';
 
 const server = http.createServer();
 
-[
-  [0.1, [0.09, 0.05, 0.12]],
-  [0.2, [0.81, 0.4, 0.11]],
-  [0.3, [0.51, 0.22, 0.14]],
-  [0.4, [0.64, 0.1, 0.97]],
-  [0.5, [0.81, 0.89, 0.88]],
-];
-
 const matrix: NeuralWeighMatrix = [
   [
     0.2,
+    'sigmoid',
     [
-      [0.1, [0.3, 0.4, 0.8]],
       [0.1, [0.09, 0.05, 0.12]],
       [0.2, [0.81, 0.4, 0.11]],
       [0.3, [0.51, 0.22, 0.14]],
@@ -26,6 +18,7 @@ const matrix: NeuralWeighMatrix = [
   ],
   [
     0.2,
+    'sigmoid',
     [
       [0.6, [0.1, 0.2, 0.3]],
       [0.7, [0.01, 0.02, 0.03]],
@@ -34,6 +27,7 @@ const matrix: NeuralWeighMatrix = [
   ],
   [
     0.2,
+    'sigmoid',
     [
       [0.9, [0.94, 0.33]],
       [0.1, [0.01, 0.78]],
@@ -42,6 +36,7 @@ const matrix: NeuralWeighMatrix = [
   ],
   [
     0.2,
+    'sigmoid',
     [
       [0.12, []],
       [0.13, []],

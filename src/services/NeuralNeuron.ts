@@ -1,13 +1,15 @@
 import NeuralSynaps from './NeuralSynaps';
-import NeuralActivator from './NeuralActivator';
+import type { ActivatorFunction } from './NeuralActivator';
 
 class NeuralNeuron {
   #synapses: NeuralSynaps[] = [];
   #weight: number = 0;
   #activations: number[] = [];
+  #activatorFn: ActivatorFunction;
 
-  public constructor(weight: number) {
+  public constructor(weight: number, activatorFN: ActivatorFunction) {
     this.#weight = weight;
+    this.#activatorFn = activatorFN;
   }
 
   public activate(value: number) {
@@ -17,7 +19,7 @@ class NeuralNeuron {
   public getActivationsSum() {
     const sum = this.#activations.reduce((acc, value) => acc + value, 0);
 
-    return NeuralActivator.sigmoid(sum);
+    return this.#activatorFn(sum);
   }
 
   public createSynaps(neuron: NeuralNeuron, weight: number, bias: number) {
@@ -44,5 +46,3 @@ class NeuralNeuron {
 }
 
 export default NeuralNeuron;
-
-export type ActivatorName = 'linear' | 'sigmoid' | 'tanh';

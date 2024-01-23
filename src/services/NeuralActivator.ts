@@ -38,4 +38,8 @@ class NeuralActivator {
   }
 }
 
+export type ActivatorName = 'linear' | 'sigmoid' | 'tanh';
+
+export type ActivatorFunction = (x: number) => number;
+
 export default NeuralActivator;

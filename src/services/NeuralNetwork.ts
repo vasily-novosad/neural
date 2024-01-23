@@ -1,12 +1,18 @@
 /* eslint-disable arrow-body-style */
+import NeuralActivator, { ActivatorName, ActivatorFunction } from './NeuralActivator';
 import NeuralLayer from './NeuralLayer';
-import NeuralNeuron, { ActivatorName } from './NeuralNeuron';
+import NeuralNeuron from './NeuralNeuron';
 
 /**
  * Forward propagate neural network
  */
 class NeuralNetwork {
   #layers: NeuralLayer[] = [];
+  #activators: ActivatorCollection = {
+    sigmoid: NeuralActivator.sigmoid,
+    linear: NeuralActivator.linear,
+    tanh: NeuralActivator.tanh,
+  };
 
   /**
    * Returns all layers stack
@@ -64,37 +70,50 @@ class NeuralNetwork {
     return result;
   }
 
-  // public generateNetworkMatrix(neuronsPerLayer: number[]) {
-  //   const matrix: NeuralWeighMatrix = [];
+  /**
+   * Generate the matrix\
+   * Example:
+   * ```ts
+   * const network = new NeuralNetwork()
+   *  .generateNetworkMatrix([
+   *   20, // count of neurons on input layer
+   *   5,  // count of neurons on hidden layer
+   *   5,  // count of neurons on hidden layer
+   *   3,  // count of neurons on output layer
+   * ]);
+   * ```
+   */
+  public generateNetworkMatrix(neuronsPerLayer: number[]) {
+    const matrix: NeuralWeighMatrix = [];
 
-  //   neuronsPerLayer.forEach((neuronCountOnLayer, layerIndex) => {
-  //     const nextLayerNeuronsCount = neuronsPerLayer[layerIndex + 1];
-  //     const layer: MatrixLayer = [];
+    neuronsPerLayer.forEach((neuronCountOnLayer, layerIndex) => {
+      const nextLayerNeuronsCount = neuronsPerLayer[layerIndex + 1];
+      const neurons: MatrixNeuron[] = [];
+      [...new Array(neuronCountOnLayer).keys()].forEach(() => {
+        const isLastLayer = typeof nextLayerNeuronsCount === 'undefined';
 
-  //     [...new Array(neuronCountOnLayer).keys()].forEach(() => {
-  //       const isLastLayer = typeof nextLayerNeuronsCount === 'undefined';
+        const weights: number[] = [];
 
-  //       const weights: number[] = [];
+        if (!isLastLayer) {
+          [...new Array(nextLayerNeuronsCount).keys()].forEach(() => {
+            weights.push(parseFloat((Math.random() * 1).toFixed(2)));
+          });
+        }
 
-  //       if (!isLastLayer) {
-  //         [...new Array(nextLayerNeuronsCount).keys()].forEach(() => {
-  //           weights.push(parseFloat((Math.random() * 1).toFixed(2)));
-  //         });
-  //       }
+        neurons.push([0.1, weights]);
 
-  //       layer.push([0.1, 0.2, 'sigmoid', weights]);
-  //     });
-  //     matrix.push(layer);
-  //   });
+        matrix.push([0.2, 'sigmoid', neurons]);
+      });
+    });
 
-  //   return matrix;
-  // }
+    return matrix;
+  }
 
   public loadNetworkFromMatrix(neuralMatrix: NeuralWeighMatrix) {
     this.destroy();
 
     neuralMatrix.forEach((matrixLayer, matrixLayerIndex) => {
-      const [layerBias, matrixSynapses] = matrixLayer;
+      const [layerBias, layerActivator, matrixSynapses] = matrixLayer;
       const layerType =
         matrixLayerIndex === 0
           ? 'input-layer'
@@ -105,7 +124,7 @@ class NeuralNetwork {
       const layer = new NeuralLayer(layerType, layerBias);
       matrixSynapses.forEach(matrixSynaps => {
         const [neuronbaseWeight] = matrixSynaps;
-        const neuron = new NeuralNeuron(neuronbaseWeight);
+        const neuron = new NeuralNeuron(neuronbaseWeight, this.getActivatorFn(layerActivator));
 
         layer.addNeuron(neuron);
       });
@@ -121,7 +140,7 @@ class NeuralNetwork {
 
       const nextLayer = this.#layers[layerIndex + 1];
       layer.getNeurons().forEach((neuron, neuronIndex) => {
-        const [layerBias, matrixSynapses] = neuralMatrix[layerIndex];
+        const [layerBias, _layerActivatorName, matrixSynapses] = neuralMatrix[layerIndex];
         const [_neuronbaseWeight, synapsWeights] = matrixSynapses[neuronIndex];
 
         synapsWeights.forEach((synapsWeight, synapsIndex) => {
@@ -137,6 +156,10 @@ class NeuralNetwork {
     return this;
   }
 
+  private getActivatorFn(activatorName: ActivatorName) {
+    return this.#activators[activatorName];
+  }
+
   public destroy() {
     this.#layers = [];
   }
@@ -147,5 +170,9 @@ export default NeuralNetwork;
 type Bias = number;
 type Weight = number;
 type MatrixNeuron = [Weight, Weight[]];
-type MatrixLayer = [Bias, MatrixNeuron[]];
+type MatrixLayer = [Bias, ActivatorName, MatrixNeuron[]];
 export type NeuralWeighMatrix = MatrixLayer[];
+
+export type ActivatorCollection = {
+  [v in ActivatorName]: ActivatorFunction;
+};
