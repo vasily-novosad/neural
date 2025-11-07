@@ -1,10 +1,13 @@
-import path = require('node:path');
-import NodemonPlugin = require('nodemon-webpack-plugin');
-import { Configuration, DefinePlugin } from 'webpack';
+import path from 'node:path';
+import NodemonPlugin from 'nodemon-webpack-plugin';
+import type { Configuration } from 'webpack';
+import webpack from 'webpack';
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
-import packageInfo from '../package.json';
+import packageInfo from '../package.json' with { type: 'json' };
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const isDev = process.env.NODE_ENV === 'development';
 const webpackBaseConfig: Configuration = {
@@ -58,7 +61,7 @@ const webpackBaseConfig: Configuration = {
     /**
      * Development and production plugins
      */
-    new DefinePlugin({
+    new webpack.DefinePlugin({
       'process.env.WEBPACK_INJECT_APP_VERSION': JSON.stringify(packageInfo.version),
     }),
     ...(isDev
