@@ -22,6 +22,8 @@ export class Network {
 
   // Обучение сети методом обратного распространения ошибки
   train(inputs: number[][], targets: number[][], epochs: number, lr: number) {
+    process.stdout.write(`Start train with ${epochs} epochs \n`);
+
     for (let epoch = 0; epoch < epochs; epoch++) {
       let totalLoss = 0;
 
@@ -67,8 +69,13 @@ export class Network {
       }
 
       // Вывод средней ошибки за эпоху
-      console.debug(`Epoch ${epoch + 1}, Loss: ${(totalLoss / inputs.length).toFixed(4)}`);
+      process.stdout.clearLine(0);
+      process.stdout.cursorTo(0);
+      // process.stdout.write('\n'); // end the line
+      process.stdout.write(`Epoch ${epoch + 1}, Loss: ${(totalLoss / inputs.length).toFixed(4)}`);
     }
+
+    process.stdout.write(`\nTrain is done\n`);
   }
 
   // Сохранение модели в JSON

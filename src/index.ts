@@ -1,7 +1,8 @@
 import { Network } from './network';
-import maleNames from '~/dict/male-names.json' with { type: 'json' };
-import femaleNames from '~/dict/female-names.json' with { type: 'json' };
-import fs from 'fs';
+import maleNames from '../dict/male-names.json' with { type: 'json' };
+import femaleNames from '../dict/female-names.json' with { type: 'json' };
+import fs from 'node:fs';
+import path from 'node:path';
 //
 // const net = new Network();
 // net.addLayer(2, 3, 'relu');
@@ -20,7 +21,7 @@ import fs from 'fs';
 //
 // // Сохранение
 // const modelJson = net.saveModel();
-// fs.writeFileSync('model.json', modelJson);
+// fs.writeFileSync('../dict/model.json', modelJson);
 //
 // // Загрузка
 // const loadedJson = fs.readFileSync('model.json', 'utf-8');
@@ -31,14 +32,6 @@ import fs from 'fs';
 
 const test2 = async () => {
   // Выборка
-  // const trainingData = [
-  //   { name: 'John', gender: [1, 0] }, // Мужчина
-  //   { name: 'Emily', gender: [0, 1] }, // Женщина
-  //   { name: 'Michael', gender: [1, 0] },
-  //   { name: 'Sarah', gender: [0, 1] },
-  //   { name: 'David', gender: [1, 0] },
-  //   { name: 'Anna', gender: [0, 1] },
-  // ];
 
   const trainingData: { name: string; gender: [number, number] }[] = [];
   maleNames.forEach(name => {
@@ -54,19 +47,24 @@ const test2 = async () => {
   });
 
   // Кодировка имени
-  // const alphabet = 'abcdefghijklmnopqrstuvwxyz'.split('');
-  const alphabet = 'абвгдеёжзиёклмнопрстуфхцчъыьэюя'.split('');
+
+  // Расширенный алфавит: латиница + кириллица + спецсимвол для неизвестных
+  const alphabet = 'abcdefghijklmnopqrstuvwxyzабвгдеёжзийклмнопрстуфхцчшщъыьэюя';
+  const unknownChar = '?';
 
   // Преобразование имени в вектор фиксированной длины (например, 10 букв)
-  function encodeName(name: string, maxLength = 10): number[] {
+  function encodeName(name: string, maxLength = 15): number[] {
+    const fullAlphabet = alphabet + unknownChar;
+
+    // Приведение к нижнему регистру и обрезка
     const lower = name.toLowerCase().slice(0, maxLength);
-    const vector = Array(maxLength * alphabet.length).fill(0);
+    const vector = Array(maxLength * fullAlphabet.length).fill(0);
 
     for (let i = 0; i < lower.length; i++) {
-      const index = alphabet.indexOf(lower[i]);
-      if (index !== -1) {
-        vector[i * alphabet.length + index] = 1;
-      }
+      const char = lower[i];
+      const index = fullAlphabet.indexOf(char);
+      const safeIndex = index !== -1 ? index : fullAlphabet.indexOf(unknownChar);
+      vector[i * fullAlphabet.length + safeIndex] = 1;
     }
 
     return vector;
@@ -76,11 +74,11 @@ const test2 = async () => {
   const net = new Network();
 
   // Входной размер = длина вектора имени
-  const inputSize = alphabet.length * 10;
+  const inputSize = alphabet.length;
 
   // Добавляем слои
-  net.addLayer(inputSize, 16, 'relu');
-  net.addLayer(16, 2, 'softmax');
+  net.addLayer(inputSize, 15, 'relu');
+  net.addLayer(15, 2, 'softmax');
 
   // Подготовка обучающих данных
   const inputs = trainingData.map(d => encodeName(d.name));
@@ -91,10 +89,21 @@ const test2 = async () => {
 
   // Сохранение модели
   const modelJson = net.saveModel();
-  fs.writeFileSync('model.json', modelJson);
+  fs.writeFileSync(path.resolve('./dict/model.json'), modelJson);
 
   // Предсказание
-  ['Андрей', 'Маша', 'Олеся', 'Кирилл', 'Игорь', 'Вася'].forEach(name => {
+  [
+    'Андрей',
+    'Мария',
+    'Олеся',
+    'Кирилл',
+    'Игорь',
+    'Василий',
+    'Яна',
+    'Кристина',
+    'Александр',
+    'Дмитрий',
+  ].forEach(name => {
     const encoded = encodeName(name);
     const prediction = net.predict(encoded);
 
