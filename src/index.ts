@@ -49,7 +49,7 @@ const test2 = async () => {
 
   femaleNames.forEach(name => {
     trainingData.push(
-      { name, gender: [0, 1] }, // male
+      { name, gender: [0, 1] }, // female
     );
   });
 
