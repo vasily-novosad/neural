@@ -1,30 +1,28 @@
-import NeuralNetwork from '~/services/network';
-import { sigmoid, sigmoidDerivative } from '~/services/activation';
+import { Network } from './network';
+import * as fs from 'fs';
 
-const usage = async () => {
-  const nn = new NeuralNetwork();
-  nn.addLayer(2, 3, sigmoid, sigmoidDerivative); // вход 2, скрытый слой 3
-  nn.addLayer(3, 1, sigmoid, sigmoidDerivative); // выход 1
+const net = new Network();
+net.addLayer(2, 3, 'relu');
+net.addLayer(3, 1, 'sigmoid');
 
-  const input = [0.5, 0.8];
-  const output = nn.predict(input);
+// Обучение
+net.train(
+  [
+    [0, 0],
+    [1, 1],
+  ],
+  [[0], [1]],
+  1000,
+  0.1,
+);
 
-  console.debug('Output:', output);
-};
+// Сохранение
+const modelJson = net.saveModel();
+fs.writeFileSync('model.json', modelJson);
 
-const learning = async () => {
-  const nn = new NeuralNetwork();
-  nn.addLayer(2, 3, sigmoid, sigmoidDerivative);
-  nn.addLayer(3, 1, sigmoid, sigmoidDerivative);
+// Загрузка
+const loadedJson = fs.readFileSync('model.json', 'utf-8');
+const net2 = new Network();
+net2.loadModel(loadedJson);
 
-  for (let i = 0; i < 10000; i++) {
-    nn.train([0, 0], [0], 0.1);
-    nn.train([0, 1], [1], 0.1);
-    nn.train([1, 0], [1], 0.1);
-    nn.train([1, 1], [0], 0.1);
-  }
-
-  console.debug('Output for [1, 0]:', nn.predict([1, 0]));
-};
-learning();
-usage();
+console.log(net2.predict([1, 1]));
