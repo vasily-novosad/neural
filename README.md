@@ -9,13 +9,13 @@
 
 ## Возможности
 
-- Поддержка нескольких слоёв с произвольной архитектурой
+- Полносвязные слои произвольного размера
 - Функции активации: `sigmoid`, `relu`, `softmax`
-- Обучение с обратным распространением ошибки (backpropagation)
-- Функция потерь: среднеквадратичная ошибка (MSE)
+- Функции потерь: среднеквадратичная ошибка (`mse`) и кросс-энтропия (`crossEntropy`, в паре с `softmax`)
+- Обучение стохастическим градиентным спуском с обратным распространением ошибки
+- Численная проверка градиентов в тестах
+- Воспроизводимые эксперименты (генератор случайных чисел с зерном)
 - Сохранение и загрузка модели в JSON
-- Написано на TypeScript с модульной архитектурой
-- Поддержка unit-тестов через Jest
 
 ---
 
@@ -27,77 +27,75 @@ cd neural
 npm install
 ```
 
-## Быстрый старт
+## Запуск примера
+
+Пример в `src/index.ts` учит сеть определять пол по имени (словари в `dict/`):
+
+```bash
+npm run start:dist   # сборка и обучение
+npm test             # проверка градиентов и XOR
+```
+
+## Playground
+
+Та же сеть в браузере: настройки, обучение с графиками, проверка любого имени,
+активность скрытых нейронов.
+
+```bash
+npm run playground         # собрать build/playground/index.html
+npm run playground:watch   # пересобирать при каждом сохранении файлов
+```
+
+Страница — один HTML-файл со встроенным скриптом, сервер не нужен: откройте
+`build/playground/index.html` в браузере. После пересборки обновите страницу.
+
+## Быстрый старт: XOR
 
 ```ts
 import { Network } from './src/network';
 
-const net = new Network();
-net.addLayer(2, 3, 'relu');
-net.addLayer(3, 1, 'sigmoid');
+const net = new Network('mse');
+net.addLayer(2, 4, 'sigmoid');
+net.addLayer(4, 1, 'sigmoid');
 
 const inputs = [
   [0, 0],
   [0, 1],
   [1, 0],
-  [1, 1]
+  [1, 1],
 ];
+const targets = [[0], [1], [1], [0]];
 
-const targets = [
-  [0],
-  [1],
-  [1],
-  [0]
-];
+net.train(inputs, targets, { epochs: 5000, learningRate: 0.5 });
 
-net.train(inputs, targets, 1000, 0.1);
-
-console.log(net.predict([1, 1]));
-
-
+console.log(net.predict([1, 1])); // ≈ [0]
 ```
+
+Для классификации на несколько классов: `softmax` в последнем слое и `new Network('crossEntropy')`.
 
 ## Сохранение и загрузка модели
 
 ```ts
-// Сохранение
-const json = net.saveModel();
-fs.writeFileSync('model.json', json);
+fs.writeFileSync('model.json', net.saveModel());
 
-// Загрузка
-const loaded = fs.readFileSync('model.json', 'utf-8');
 const net2 = new Network();
-net2.loadModel(loaded);
-
+net2.loadModel(fs.readFileSync('model.json', 'utf-8'));
 ```
 
-### Структура проекта
+## Структура проекта
 
-neural/
-├── src/
-│ ├── activations.ts # Функции активации и их производные
-│ ├── layer.ts # Класс слоя нейросети
-│ ├── network.ts # Класс сети, обучение, предсказание
-│ ├── loss.ts # Функции потерь
-│ └── utils.ts # Вспомогательные функции
-├── test/ # Тесты
-├── package.json
-├── tsconfig.json
-└── README.md
-
-## Архитектура
-
-Каждый слой хранит:
-
-- weights: матрица весов
-
-- biases: вектор смещений
-
-- activation: тип активации
-
-- inputSize, outputSize: размеры входа и выхода
-
-Сеть обучается с помощью градиентного спуска, используя производные функций активации и MSE.
+```
+src/
+├── activators.ts    # Функции активации и их производные
+├── loss.ts          # Функции потерь
+├── layer.ts         # Слой: веса, смещения, прямой проход
+├── network.ts       # Сеть: обратное распространение, обучение, сохранение
+├── network.test.ts  # Численная проверка градиентов
+├── utils.ts         # Линейная алгебра, случайные числа
+├── names.ts         # Задача «пол по имени»: данные и кодирование
+├── index.ts         # Консольный пример: пол по имени
+└── playground/      # Playground в браузере
+```
 
 ## Лицензия
 

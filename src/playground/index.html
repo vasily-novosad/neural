@@ -1,0 +1,414 @@
+<title>Лаборатория имён</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Unbounded:wght@500;700&display=swap">
+<style>
+  /* Макет: панель настроек слева, справа — результат: цифры, проверка имени, графики, ошибки */
+  :root {
+    --bg: #f5f6f3;
+    --panel: #ffffff;
+    --ink: #17201c;
+    --ink-2: #4f5a54;
+    --ink-3: #7b857f;
+    --line: #dfe3dd;
+    --line-strong: #c4cbc4;
+    --accent: #2f5bd0;
+    --accent-ink: #ffffff;
+    --series-train: #2a78d6;
+    --series-test: #eb6834;
+    --good: #19794a;
+    --bad: #b8352f;
+    --cell: #2f5bd0;
+
+    --font-display: 'Unbounded', 'Golos Text', system-ui, sans-serif;
+    --font-body: 'Golos Text', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+
+    --radius: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #121614;
+      --panel: #1a1f1c;
+      --ink: #eef1ed;
+      --ink-2: #b8c1bb;
+      --ink-3: #8a948e;
+      --line: #2b322e;
+      --line-strong: #3d4641;
+      --accent: #7c9cf5;
+      --accent-ink: #0f1420;
+      --series-train: #3987e5;
+      --series-test: #d95926;
+      --good: #5cc48d;
+      --bad: #f0827b;
+      --cell: #7c9cf5;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #121614;
+    --panel: #1a1f1c;
+    --ink: #eef1ed;
+    --ink-2: #b8c1bb;
+    --ink-3: #8a948e;
+    --line: #2b322e;
+    --line-strong: #3d4641;
+    --accent: #7c9cf5;
+    --accent-ink: #0f1420;
+    --series-train: #3987e5;
+    --series-test: #d95926;
+    --good: #5cc48d;
+    --bad: #f0827b;
+    --cell: #7c9cf5;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 15px/1.5 var(--font-body);
+  }
+  .page {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding-block: 28px 48px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    display: grid;
+    gap: 24px;
+  }
+  header { display: grid; gap: 6px; }
+  h1 {
+    font: 700 clamp(22px, 3.2vw, 30px)/1.15 var(--font-display);
+    letter-spacing: -0.01em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .lead { margin: 0; color: var(--ink-2); max-width: 68ch; }
+  .arch {
+    font: 13px/1.4 var(--font-mono);
+    color: var(--ink-2);
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 300px minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+  }
+  @media (max-width: 860px) {
+    .layout { grid-template-columns: minmax(0, 1fr); }
+  }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 18px;
+    display: grid;
+    gap: 16px;
+    min-width: 0;
+  }
+  h2 {
+    font: 600 12px/1.2 var(--font-body);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin: 0;
+  }
+
+  /* Настройки */
+  .settings { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); }
+  @media (max-width: 860px) { .settings { position: static; } }
+  .field { display: grid; gap: 6px; }
+  .field-head { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+  .field label { font-weight: 500; }
+  .field output { font: 600 14px var(--font-mono); font-variant-numeric: tabular-nums; }
+  .hint { font-size: 13px; color: var(--ink-3); line-height: 1.4; }
+  input[type="range"] { width: 100%; accent-color: var(--accent); }
+  select, input[type="number"], input[type="text"] {
+    font: inherit;
+    color: var(--ink);
+    background: var(--bg);
+    border: 1px solid var(--line-strong);
+    border-radius: 8px;
+    padding: 7px 10px;
+    width: 100%;
+  }
+  .switch { display: flex; gap: 10px; align-items: center; font-weight: 500; cursor: pointer; }
+  .switch input { width: 18px; height: 18px; accent-color: var(--accent); margin: 0; }
+  .actions { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+  button {
+    font: 600 15px var(--font-body);
+    border-radius: 8px;
+    padding: 10px 14px;
+    cursor: pointer;
+    border: 1px solid transparent;
+  }
+  .primary { background: var(--accent); color: var(--accent-ink); }
+  .primary:hover { filter: brightness(1.08); }
+  .secondary { background: transparent; color: var(--ink); border-color: var(--line-strong); }
+  .secondary:disabled { opacity: 0.45; cursor: default; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .results { display: grid; gap: 24px; min-width: 0; }
+
+  /* Сводка */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+  }
+  @media (max-width: 560px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .stat { display: grid; gap: 2px; }
+  .stat-label { font-size: 13px; color: var(--ink-3); }
+  .stat-value {
+    font: 600 24px/1.2 var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+  .stat-value .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: 3px; }
+  .progress { height: 4px; background: var(--line); border-radius: 2px; overflow: hidden; }
+  .progress > div { height: 100%; background: var(--accent); width: 0; transition: width 0.15s; }
+
+  /* Проверка имени */
+  .probe { display: grid; gap: 14px; }
+  .probe-input { font-size: 20px; padding: 10px 14px; }
+  .verdict { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; }
+  .verdict-class { font: 700 22px var(--font-display); }
+  .verdict-meta { color: var(--ink-2); }
+  .verdict-meta .ok { color: var(--good); font-weight: 600; }
+  .verdict-meta .no { color: var(--bad); font-weight: 600; }
+  .split { display: grid; gap: 4px; }
+  .split-bar {
+    display: flex;
+    height: 14px;
+    border-radius: 4px;
+    overflow: hidden;
+    background: var(--line);
+    gap: 2px;
+  }
+  .split-bar .m { background: var(--ink); transition: width 0.2s; }
+  .split-bar .f { background: var(--line-strong); transition: width 0.2s; flex: 1; }
+  .split-legend {
+    display: flex;
+    justify-content: space-between;
+    font: 13px var(--font-mono);
+    color: var(--ink-2);
+    font-variant-numeric: tabular-nums;
+  }
+  .sub { display: grid; gap: 8px; }
+  .sub-title { font-size: 13px; color: var(--ink-3); }
+  .letters { display: flex; flex-wrap: wrap; gap: 6px; }
+  .letter {
+    display: grid;
+    justify-items: center;
+    min-width: 38px;
+    padding: 4px 6px 3px;
+    border: 1px solid var(--line-strong);
+    border-radius: 6px;
+    background: var(--bg);
+  }
+  .letter b { font: 600 18px var(--font-mono); }
+  .letter small { font: 11px var(--font-mono); color: var(--ink-3); }
+  .letter.empty b { color: var(--ink-3); }
+  .neurons { display: flex; flex-wrap: wrap; gap: 3px; }
+  .neuron {
+    width: 22px;
+    height: 22px;
+    border-radius: 4px;
+    border: 1px solid var(--line);
+    position: relative;
+    overflow: hidden;
+    background: var(--bg);
+  }
+  .neuron > i { position: absolute; inset: 0; background: var(--cell); }
+
+  /* Графики */
+  .charts { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 24px; }
+  @media (max-width: 720px) { .charts { grid-template-columns: minmax(0, 1fr); } }
+  .chart { display: grid; gap: 8px; min-width: 0; position: relative; }
+  .chart-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; align-items: baseline; }
+  .chart-title { font-weight: 600; }
+  .legend { display: flex; gap: 14px; font-size: 13px; color: var(--ink-2); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend svg { overflow: visible; }
+  .chart svg.plot { width: 100%; height: auto; display: block; touch-action: pan-y; }
+  .chart svg text { font: 11px var(--font-mono); fill: var(--ink-3); }
+  .chart svg .label { font-size: 12px; fill: var(--ink-2); font-weight: 600; }
+  .grid line { stroke: var(--line); stroke-width: 1; }
+  .baseline { stroke: var(--line-strong); }
+  .crosshair { stroke: var(--ink-3); stroke-width: 1; }
+  .tooltip {
+    position: absolute;
+    pointer-events: none;
+    background: var(--panel);
+    border: 1px solid var(--line-strong);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font: 12px/1.5 var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+    box-shadow: 0 4px 14px rgb(0 0 0 / 0.12);
+    white-space: nowrap;
+  }
+  .tooltip .k { color: var(--ink-3); }
+  details { font-size: 14px; }
+  summary { cursor: pointer; color: var(--ink-2); }
+  .table-wrap { overflow-x: auto; margin-top: 8px; }
+  table { border-collapse: collapse; font: 13px var(--font-mono); font-variant-numeric: tabular-nums; }
+  th, td { padding: 4px 14px 4px 0; text-align: right; border-bottom: 1px solid var(--line); }
+  th { color: var(--ink-3); font-weight: 400; }
+
+  /* Ошибки */
+  .mistakes { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    font: 500 14px var(--font-body);
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--line-strong);
+    background: var(--bg);
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .chip small { color: var(--ink-3); font-weight: 400; margin-left: 4px; }
+  .chip:hover { border-color: var(--accent); }
+  .empty-note { color: var(--ink-3); }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+
+<div class="page">
+  <header>
+    <h1>Лаборатория имён</h1>
+    <p class="lead">
+      Нейросеть учится определять пол по имени прямо в браузере. Меняйте настройки, обучайте заново
+      и смотрите, как меняются точность на тестовых именах и ответы сети.
+    </p>
+    <div class="arch" id="arch">240 входов → 16 нейронов ReLU → 2 выхода softmax</div>
+  </header>
+
+  <div class="layout">
+    <form class="panel settings" id="settings">
+      <h2>Настройки</h2>
+
+      <div class="field">
+        <div class="field-head"><label for="maxLength">Букв на входе</label><output id="maxLengthOut">4</output></div>
+        <input type="range" id="maxLength" min="1" max="10" value="4">
+        <div class="hint">Больше букв — больше входов и легче запомнить имя целиком.</div>
+      </div>
+
+      <label class="switch"><input type="checkbox" id="fromEnd" checked> Читать имя с конца</label>
+      <div class="hint">Снимите галочку и обучите заново: точность заметно упадёт.</div>
+
+      <div class="field">
+        <div class="field-head"><label for="hidden">Нейронов в скрытом слое</label><output id="hiddenOut">16</output></div>
+        <input type="range" id="hidden" min="0" max="64" value="16">
+        <div class="hint">0 — без скрытого слоя: сеть складывает «голоса» отдельных букв.</div>
+      </div>
+
+      <div class="field">
+        <label for="learningRate">Скорость обучения</label>
+        <select id="learningRate">
+          <option value="0.0005">0.0005</option>
+          <option value="0.001">0.001</option>
+          <option value="0.005" selected>0.005</option>
+          <option value="0.02">0.02</option>
+          <option value="0.1">0.1</option>
+          <option value="0.5">0.5</option>
+        </select>
+        <div class="hint">Слишком маленькая — сеть учится медленно, слишком большая — loss скачет.</div>
+      </div>
+
+      <div class="field">
+        <div class="field-head"><label for="epochs">Эпох</label><output id="epochsOut">15</output></div>
+        <input type="range" id="epochs" min="1" max="60" value="15">
+        <div class="hint">Эпоха — один проход по всем обучающим именам.</div>
+      </div>
+
+      <div class="field">
+        <label for="seed">Зерно случайности</label>
+        <input type="number" id="seed" value="2025" min="0" step="1">
+        <div class="hint">Одно зерно — одни и те же начальные веса и разбиение на выборки.</div>
+      </div>
+
+      <div class="actions">
+        <button type="submit" class="primary" id="trainBtn">Обучить</button>
+        <button type="button" class="secondary" id="stopBtn" disabled>Стоп</button>
+      </div>
+    </form>
+
+    <div class="results">
+      <section class="panel" aria-labelledby="statsTitle">
+        <h2 id="statsTitle">Обучение</h2>
+        <div class="stats">
+          <div class="stat"><span class="stat-label">Эпоха</span><span class="stat-value" id="statEpoch">—</span></div>
+          <div class="stat"><span class="stat-label">Loss</span><span class="stat-value" id="statLoss">—</span></div>
+          <div class="stat"><span class="stat-label">Точность: обучение</span><span class="stat-value" id="statTrain">—</span></div>
+          <div class="stat"><span class="stat-label">Точность: тест</span><span class="stat-value" id="statTest">—</span></div>
+        </div>
+        <div class="progress" aria-hidden="true"><div id="progress"></div></div>
+        <div class="hint" id="splitInfo"></div>
+      </section>
+
+      <section class="panel probe" aria-labelledby="probeTitle">
+        <h2 id="probeTitle">Проверить имя</h2>
+        <input type="text" class="probe-input" id="probe" value="Ладомира" autocomplete="off" spellcheck="false" aria-label="Имя">
+        <div class="verdict">
+          <span class="verdict-class" id="verdictClass">—</span>
+          <span class="verdict-meta" id="verdictMeta"></span>
+        </div>
+        <div class="split">
+          <div class="split-bar" aria-hidden="true"><div class="m" id="barMale"></div><div class="f"></div></div>
+          <div class="split-legend"><span id="pMale">мужское —</span><span id="pFemale">женское —</span></div>
+        </div>
+        <div class="sub">
+          <div class="sub-title">Что видит сеть: буквы по позициям входа</div>
+          <div class="letters" id="letters"></div>
+        </div>
+        <div class="sub" id="neuronsBlock">
+          <div class="sub-title" id="neuronsTitle">Активность скрытых нейронов</div>
+          <div class="neurons" id="neurons"></div>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="chartsTitle">
+        <h2 id="chartsTitle">По эпохам</h2>
+        <div class="charts">
+          <div class="chart" id="accChart">
+            <div class="chart-head">
+              <span class="chart-title">Точность</span>
+              <span class="legend">
+                <span><svg width="18" height="4"><line x1="0" y1="2" x2="18" y2="2" stroke="var(--series-train)" stroke-width="2"/></svg>обучение</span>
+                <span><svg width="18" height="4"><line x1="0" y1="2" x2="18" y2="2" stroke="var(--series-test)" stroke-width="2" stroke-dasharray="5 3"/></svg>тест</span>
+              </span>
+            </div>
+          </div>
+          <div class="chart" id="lossChart">
+            <div class="chart-head"><span class="chart-title">Loss на обучении</span></div>
+          </div>
+        </div>
+        <details>
+          <summary>Таблица по эпохам</summary>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Эпоха</th><th>Loss</th><th>Обучение</th><th>Тест</th></tr></thead>
+              <tbody id="historyTable"></tbody>
+            </table>
+          </div>
+        </details>
+      </section>
+
+      <section class="panel" aria-labelledby="mistakesTitle">
+        <h2 id="mistakesTitle">Ошибки на тестовых именах</h2>
+        <div class="hint">Нажмите на имя, чтобы проверить его. У многих окончание «не того» пола — по буквам их не угадать.</div>
+        <div class="mistakes" id="mistakes"><span class="empty-note">Появятся после обучения.</span></div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<!-- SCRIPT -->

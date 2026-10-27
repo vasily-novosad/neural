@@ -1,116 +1,160 @@
-import { Network } from './network';
-import maleNames from '../dict/male-names.json' with { type: 'json' };
-import femaleNames from '../dict/female-names.json' with { type: 'json' };
+/**
+ * Пример: определение пола по имени.
+ *
+ * Классическая учебная задача классификации: вход — строка, выход — один из двух классов.
+ * Полный цикл: подготовка данных → кодирование → разбиение на выборки → обучение →
+ * оценка на данных, которых сеть не видела → сохранение и загрузка модели.
+ *
+ * Данные и кодирование — в names.ts. Тот же код использует playground (src/playground).
+ */
 import fs from 'node:fs';
 import path from 'node:path';
-//
-// const net = new Network();
-// net.addLayer(2, 3, 'relu');
-// net.addLayer(3, 1, 'sigmoid');
-//
-// // Обучение
-// net.train(
-//   [
-//     [0, 0],
-//     [1, 1],
-//   ],
-//   [[0], [1]],
-//   1000,
-//   0.1,
-// );
-//
-// // Сохранение
-// const modelJson = net.saveModel();
-// fs.writeFileSync('../dict/model.json', modelJson);
-//
-// // Загрузка
-// const loadedJson = fs.readFileSync('model.json', 'utf-8');
-// const net2 = new Network();
-// net2.loadModel(loadedJson);
+import { Network } from './network';
+import { setSeed } from './utils';
+import {
+  CLASS_NAMES,
+  Encoding,
+  MALE,
+  FEMALE,
+  accuracy,
+  allSamples,
+  classify,
+  encodeName,
+  inputSize,
+  oneHot,
+  splitSamples,
+} from './names';
 
-// console.log(net2.predict([1, 1]));
+// Фиксированное зерно: начальные веса и порядок примеров одинаковы при каждом запуске
+setSeed(2025);
 
-const test2 = async () => {
-  // Выборка
+// ---------------------------------------------------------------------------------------------
+// 1. Данные и кодирование
+// ---------------------------------------------------------------------------------------------
 
-  const trainingData: { name: string; gender: [number, number] }[] = [];
-  maleNames.forEach(name => {
-    trainingData.push(
-      { name, gender: [1, 0] }, // male
-    );
-  });
+const TEST_FRACTION = 0.2;
+const { train: trainSamples, test: testSamples } = splitSamples(allSamples, TEST_FRACTION);
 
-  femaleNames.forEach(name => {
-    trainingData.push(
-      { name, gender: [0, 1] }, // female
-    );
-  });
+const ENCODING: Encoding = { maxLength: 4, fromEnd: true };
+const INPUT_SIZE = inputSize(ENCODING);
 
-  // Кодировка имени
+const trainInputs = trainSamples.map(s => encodeName(s.name, ENCODING));
+const trainTargets = trainSamples.map(s => oneHot(s.label));
 
-  // Расширенный алфавит: латиница + кириллица + спецсимвол для неизвестных
-  const alphabet = 'abcdefghijklmnopqrstuvwxyzабвгдеёжзийклмнопрстуфхцчшщъыьэюя';
-  const unknownChar = '?';
+// ---------------------------------------------------------------------------------------------
+// 2. Сеть
+// ---------------------------------------------------------------------------------------------
 
-  // Преобразование имени в вектор фиксированной длины (например, 10 букв)
-  function encodeName(name: string, maxLength = 15): number[] {
-    const fullAlphabet = alphabet + unknownChar;
+/**
+ * 240 входов → 16 скрытых нейронов (ReLU) → 2 выхода (softmax).
+ *
+ * Скрытый слой позволяет учитывать сочетания букв: «-ия» — скорее женское,
+ * но «Илия» — мужское; «-а» — женское, но «Никита» и «Лука» — мужские.
+ * Без скрытого слоя (логистическая регрессия) сеть могла бы только складывать
+ * независимые «голоса» отдельных букв.
+ */
+const HIDDEN_SIZE = 16;
+const net = new Network('crossEntropy');
+net.addLayer(INPUT_SIZE, HIDDEN_SIZE, 'relu');
+net.addLayer(HIDDEN_SIZE, CLASS_NAMES.length, 'softmax');
 
-    // Приведение к нижнему регистру и обрезка
-    const lower = name.toLowerCase().slice(0, maxLength);
-    const vector = Array(maxLength * fullAlphabet.length).fill(0);
+const percent = (value: number) => `${(value * 100).toFixed(1)}%`;
 
-    for (let i = 0; i < lower.length; i++) {
-      const char = lower[i];
-      const index = fullAlphabet.indexOf(char);
-      const safeIndex = index !== -1 ? index : fullAlphabet.indexOf(unknownChar);
-      vector[i * fullAlphabet.length + safeIndex] = 1;
+// ---------------------------------------------------------------------------------------------
+// 3. Обучение
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * Скорость обучения (learning rate) — размер шага градиентного спуска.
+ * Слишком большая — потеря скачет или растёт; слишком маленькая — обучение идёт годами.
+ * Её подбирают экспериментом. Попробуйте 0.5 и 0.001 и посмотрите, что будет.
+ *
+ * Число эпох тоже подбирают по тестовой точности: если на обучающей выборке точность
+ * растёт, а на тестовой падает — сеть начала запоминать примеры (переобучение).
+ * Поставьте EPOCHS = 50 и посмотрите на это сами.
+ *
+ * Строго говоря, подбирая настройки по тестовой выборке, мы немного «подглядываем»
+ * в неё, и оценка выходит слегка оптимистичной. В серьёзных задачах данные делят
+ * на три части: обучающую, валидационную (для подбора настроек) и тестовую
+ * (смотрят на неё один раз, в самом конце).
+ *
+ * Потолок здесь — около 92%, и дело не в сети, а в данных: в словаре много имён,
+ * чьё окончание «не того» пола (Фома, Кузьма, Илья, Нинель, Зоя, Глеб).
+ * Пол таких имён по буквам не угадать — их можно только запомнить, а на новых
+ * именах запоминание не помогает.
+ */
+const EPOCHS = 10;
+const LEARNING_RATE = 0.005;
+
+console.debug(
+  `Имён: ${allSamples.length} (обучение ${trainSamples.length}, тест ${testSamples.length})`,
+);
+console.debug(`Сеть: ${INPUT_SIZE} → ${HIDDEN_SIZE} → ${CLASS_NAMES.length}\n`);
+console.debug(`До обучения: точность на тесте ${percent(accuracy(net, testSamples, ENCODING))}\n`);
+
+net.train(trainInputs, trainTargets, {
+  epochs: EPOCHS,
+  learningRate: LEARNING_RATE,
+  onEpoch: (epoch, loss) => {
+    if (epoch === 1 || epoch % 2 === 0) {
+      console.debug(
+        `Эпоха ${String(epoch).padStart(2)}: loss ${loss.toFixed(4)}, ` +
+          `точность: обучение ${percent(accuracy(net, trainSamples, ENCODING))}, ` +
+          `тест ${percent(accuracy(net, testSamples, ENCODING))}`,
+      );
     }
+  },
+});
 
-    return vector;
-  }
-  // Создание и обучение сети
+// ---------------------------------------------------------------------------------------------
+// 4. Ошибки на тесте — по ним видно, чего сеть не поняла
+// ---------------------------------------------------------------------------------------------
 
-  const net = new Network();
+const mistakes = testSamples.filter(s => classify(net, s.name, ENCODING) !== s.label);
+console.debug(`\nОшибки на тесте (${mistakes.length} из ${testSamples.length}):`);
+console.debug(mistakes.map(s => `${s.name} (на самом деле ${CLASS_NAMES[s.label]})`).join(', '));
 
-  // Входной размер = длина вектора имени
-  const inputSize = alphabet.length;
+// ---------------------------------------------------------------------------------------------
+// 5. Сохранение и загрузка модели
+// ---------------------------------------------------------------------------------------------
 
-  // Добавляем слои
-  net.addLayer(inputSize, 15, 'relu');
-  net.addLayer(15, 2, 'softmax');
+const modelPath = path.resolve('./dict/model.json');
+fs.writeFileSync(modelPath, net.saveModel());
 
-  // Подготовка обучающих данных
-  const inputs = trainingData.map(d => encodeName(d.name));
-  const targets = trainingData.map(d => d.gender);
+// Загруженная модель обязана давать те же ответы, что и исходная
+const loaded = new Network();
+loaded.loadModel(fs.readFileSync(modelPath, 'utf-8'));
 
-  // Обучение
-  net.train(inputs, targets, 500, 0.1);
+// ---------------------------------------------------------------------------------------------
+// 6. Предсказания
+// ---------------------------------------------------------------------------------------------
 
-  // Сохранение модели
-  const modelJson = net.saveModel();
-  fs.writeFileSync(path.resolve('./dict/model.json'), modelJson);
+const known = new Set(allSamples.map(s => s.name));
 
-  // Предсказание
-  [
-    'Андрей',
-    'Мария',
-    'Олеся',
-    'Кирилл',
-    'Игорь',
-    'Василий',
-    'Яна',
-    'Кристина',
-    'Александр',
-    'Дмитрий',
-  ].forEach(name => {
-    const encoded = encodeName(name);
-    const prediction = net.predict(encoded);
+console.debug('\nПредсказания загруженной модели:');
+[
+  'Андрей',
+  'Мария',
+  'Кирилл',
+  'Кристина',
+  'Никита', // Мужское на «-а» — трудный случай
+  'Илья', // Мужское на «-я»
+  // Этих имён нет в словарях
+  'Ратмир',
+  'Милослав',
+  'Велимир',
+  'Святогор',
+  'Добрыня', // Мужское на «-я», в словаре его нет
+  'Велислава',
+  'Ладомира',
+  'Снежина',
+].forEach(name => {
+  const [male, female] = loaded.predict(encodeName(name, ENCODING));
+  const label = male > female ? MALE : FEMALE;
+  const confidence = Math.max(male, female);
+  const source = known.has(name) ? 'есть в словаре' : 'новое имя';
 
-    const gender = prediction[0] > prediction[1] ? 'Мужчина' : 'Женщина';
-
-    console.debug(`Gender prediction for ${name}: ${gender}`);
-  });
-};
-
-test2();
+  console.debug(
+    `  ${name.padEnd(10)} ${CLASS_NAMES[label].padEnd(8)} ${percent(confidence).padStart(6)}  (${source})`,
+  );
+});

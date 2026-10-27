@@ -13,6 +13,8 @@
         "dist": "npm run lint && npm run build:dist",
         "build:dev": "cross-env NODE_ENV=development webpack --config ./webpack/webpack-config.ts --color --progress",
         "build:dist": "cross-env NODE_ENV=production webpack --config ./webpack/webpack-config.ts --color --progress",
+        "playground": "webpack --config ./webpack/webpack-playground.ts --color",
+        "playground:watch": "webpack --config ./webpack/webpack-playground.ts --color --watch",
         "lint": "tsc --noEmit && eslint --fix .",
         "pretty": "prettier --write ./src",
         "test": "cross-env TEST=true jest"
